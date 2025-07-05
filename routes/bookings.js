@@ -180,4 +180,78 @@ router.post('/bookings', async (req, res) => {
   }
 });
 
+// ADD THIS TO THE BOTTOM OF YOUR EXISTING FILE
+// (keep everything else you already have)
+
+// Database reset endpoint - ADD THIS ONLY
+router.post('/reset-database', async (req, res) => {
+  try {
+    // Clear all collections
+    await Event.deleteMany({});
+    await Seat.deleteMany({});
+    await Booking.deleteMany({});
+
+    // Create sample event
+    const event = new Event({
+      title: 'Summer Music Festival 2025',
+      description: 'Annual outdoor music festival featuring top artists',
+      category: 'Music',
+      startDateTime: new Date('2025-08-15T19:00:00Z'),
+      endDateTime: new Date('2025-08-15T23:00:00Z'),
+      venue: {
+        name: 'Central Park Amphitheater',
+        address: '123 Park Ave, New York, NY',
+        capacity: 150
+      }
+    });
+
+    await event.save();
+
+    // Create sample seats
+    const sections = [
+      { name: 'VIP', rows: 2, seatsPerRow: 5, price: 150 },
+      { name: 'Premium', rows: 3, seatsPerRow: 10, price: 100 },
+      { name: 'General', rows: 5, seatsPerRow: 15, price: 50 }
+    ];
+
+    let seatCount = 0;
+    for (const section of sections) {
+      for (let row = 1; row <= section.rows; row++) {
+        for (let seatNum = 1; seatNum <= section.seatsPerRow; seatNum++) {
+          const seat = new Seat({
+            eventId: event._id,
+            section: section.name,
+            row: String.fromCharCode(64 + row),
+            seatNumber: seatNum.toString(),
+            price: section.price,
+            status: 'available'
+          });
+          await seat.save();
+          seatCount++;
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Database reset and seeded successfully',
+      data: {
+        eventId: event._id.toString(),
+        eventTitle: event.title,
+        totalSeats: seatCount,
+        database: 'eventspark',
+        testUrl: `/api/events/${event._id}/seats`
+      }
+    });
+
+  } catch (error) {
+    console.error('Reset error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Database reset failed',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
