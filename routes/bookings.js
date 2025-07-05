@@ -3,12 +3,21 @@ const router = express.Router();
 const Event = require('../models/Event');
 const Seat = require('../models/Seat');
 const Booking = require('../models/Booking');
+const mongoose = require('mongoose'); // Add this if not already there
 
 // Route 1: GET /api/events/:eventId/seats
 router.get('/events/:eventId/seats', async (req, res) => {
   try {
     const { eventId } = req.params;
     
+    // Validate ObjectId formats
+    if (!mongoose.Types.ObjectId.isValid(eventId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid event ID format'
+      });
+    }
+
     // Check if event exists
     const event = await Event.findById(eventId);
     if (!event) {
@@ -79,6 +88,23 @@ router.post('/bookings', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields: eventId, seatIds, contactInfo'
+      });
+    }
+
+    // Validate ObjectId formats
+    if (!mongoose.Types.ObjectId.isValid(eventId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid event ID format'
+      });
+    }
+
+    // Validate seat IDs
+    const invalidSeatIds = seatIds.filter(id => !mongoose.Types.ObjectId.isValid(id));
+    if (invalidSeatIds.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid seat ID format'
       });
     }
 
